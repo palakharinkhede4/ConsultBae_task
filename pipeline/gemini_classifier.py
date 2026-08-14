@@ -4,6 +4,7 @@ Uses Google Gemini API to auto-classify candidate skills, seniority, and talent 
 """
 
 import os
+import re
 import json
 import requests
 from typing import Dict, Any, Optional, Tuple
@@ -12,7 +13,7 @@ from typing import Dict, Any, Optional, Tuple
 def get_gemini_config() -> Tuple[Optional[str], str]:
     """Retrieves GEMINI_API_KEY and GEMINI_MODEL from environment or .env file."""
     api_key = os.getenv("GEMINI_API_KEY")
-    model = os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite"
+    model = os.getenv("GEMINI_MODEL") or "gemini-3.5-flash"
 
     env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
     if os.path.exists(env_path):
@@ -27,6 +28,25 @@ def get_gemini_config() -> Tuple[Optional[str], str]:
     return api_key, model
 
 
+def extract_json_from_text(raw_text: str) -> Dict[str, Any]:
+    """
+    Robust JSON parser that handles codeblocks and escaped strings.
+    """
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
+        text = text.strip()
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"(\{[\s\S]*\})", text)
+        if match:
+            return json.loads(match.group(1).strip())
+        raise
+
+
 def classify_candidate_with_gemini(
     name: str,
     experience_years: float,
@@ -35,7 +55,8 @@ def classify_candidate_with_gemini(
     model: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Sends candidate profile to Google Gemini and returns structured JSON classification.
+    Sends candidate profile to Google Gemini using structured responseSchema
+    and returns guaranteed valid JSON classification.
     """
     env_key, env_model = get_gemini_config()
     key = api_key or env_key
@@ -62,37 +83,49 @@ def classify_candidate_with_gemini(
             "recruitment_summary": f"{name} is a {seniority} {category} with {experience_years} years of experience in {skills}."
         }
 
-    # Clean model name if passed with 'models/' prefix
     target_model = target_model.replace("models/", "")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={key}"
     
-    prompt = f"""You are an expert technical talent recruiter at ConsultBae.
-Analyze the following candidate profile and return a structured JSON evaluation:
+    prompt = f"""Analyze the candidate profile for gig project evaluation:
 Candidate Name: {name}
 Experience: {experience_years} years
 Skills: {skills}
 
-Tasks:
-1. Classify candidate into exactly ONE primary category: ["Automation Specialist", "Full-Stack Web Dev", "Data & AI Engineer", "Backend Engineer"]
-2. Assign Seniority Level: ["Junior", "Mid-Level", "Senior", "Lead"]
-3. Provide a 1-sentence recruitment summary highlighting fit for gig projects.
-
-Respond strictly in valid JSON with keys: category, seniority, recruitment_summary."""
+1. Classify candidate into primary category.
+2. Assign Seniority Level.
+3. Provide a 1-sentence recruitment summary."""
 
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "OBJECT",
+                "properties": {
+                    "category": {
+                        "type": "STRING",
+                        "enum": ["Automation Specialist", "Full-Stack Web Dev", "Data & AI Engineer", "Backend Engineer"]
+                    },
+                    "seniority": {
+                        "type": "STRING",
+                        "enum": ["Junior", "Mid-Level", "Senior", "Lead"]
+                    },
+                    "recruitment_summary": {
+                        "type": "STRING"
+                    }
+                },
+                "required": ["category", "seniority", "recruitment_summary"]
+            },
             "temperature": 0.2
         }
     }
 
     try:
-        res = requests.post(url, json=payload, timeout=10)
+        res = requests.post(url, json=payload, timeout=25)
         if res.status_code == 200:
             data = res.json()
             raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
-            parsed = json.loads(raw_text)
+            parsed = extract_json_from_text(raw_text)
             parsed["status"] = "SUCCESS"
             parsed["model_used"] = target_model
             return parsed
