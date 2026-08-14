@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConsultBae — AI Automation & Audio Gig Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Background Glow Elements -->
+  <div class="bg-gradient-orb orb-1"></div>
+  <div class="bg-gradient-orb orb-2"></div>
+
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-badge">
+        <div class="brand-icon">🎙️</div>
+        <div>
+          <h1 class="brand-title">ConsultBae <span class="badge-tag">AI Platform</span></h1>
+          <p class="brand-subtitle">Gig Worker Audio Ingestion & Database Intelligence</p>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Bar -->
+      <div class="header-stats">
+        <div class="stat-chip">
+          <span class="stat-label">Merged Candidates</span>
+          <span class="stat-value" id="stat-candidates">54</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">Verified Gig Workers</span>
+          <span class="stat-value" id="stat-verified">16</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">Audio Submissions</span>
+          <span class="stat-value highlight" id="stat-submissions">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tab-navigation">
+      <button class="nav-tab active" id="tab-btn-record" onclick="switchTab('record')">
+        <span class="tab-icon">🎙️</span> 1. Audio Collection Studio
+      </button>
+      <button class="nav-tab" id="tab-btn-submissions" onclick="switchTab('submissions')">
+        <span class="tab-icon">📊</span> 2. Submissions & Audio Player
+      </button>
+      <button class="nav-tab" id="tab-btn-database" onclick="switchTab('database')">
+        <span class="tab-icon">🗄️</span> 3. Master Database (Task 1)
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- VIEW 1: AUDIO COLLECTION STUDIO (TASK 3 CORE) -->
+    <section id="view-record" class="view-panel active">
+      <div class="grid-layout-2col">
+        
+        <!-- Left Column: Input Form & Audio Recorder -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h2 class="card-title">Submit Gig Audio Recording</h2>
+            <p class="card-desc">Enter your candidate details and record directly or upload an audio file.</p>
+          </div>
+
+          <form id="audio-form" onsubmit="handleAudioSubmit(event)">
+            <!-- Candidate Details -->
+            <div class="form-group">
+              <label for="candidate-name" class="form-label">Full Name <span class="required">*</span></label>
+              <input type="text" id="candidate-name" name="name" class="form-input" placeholder="e.g. Tanvi Gupta" required>
+            </div>
+
+            <div class="form-group">
+              <label for="candidate-phone" class="form-label">Phone Number <span class="required">*</span></label>
+              <input type="tel" id="candidate-phone" name="phone" class="form-input" placeholder="e.g. 9000000254 or +91 9000000254" required>
+              <span class="form-hint">Accepts 10-digit mobile number with or without +91 prefix.</span>
+            </div>
+
+            <!-- Quick Auto-Fill helper for testing -->
+            <div class="autofill-chips">
+              <span class="chip-label">Quick Fill:</span>
+              <button type="button" class="chip-btn" onclick="quickFill('Tanvi Gupta', '9000000254')">Tanvi Gupta</button>
+              <button type="button" class="chip-btn" onclick="quickFill('Rohit Nair', '9000000268')">Rohit Nair</button>
+              <button type="button" class="chip-btn" onclick="quickFill('Isha Chopra', '9000000138')">Isha Chopra</button>
+            </div>
+
+            <!-- Recording & Upload Selector -->
+            <div class="input-method-selector">
+              <button type="button" id="btn-mode-record" class="mode-btn active" onclick="setAudioMode('record')">
+                <span>🔴</span> Record via Mic
+              </button>
+              <button type="button" id="btn-mode-upload" class="mode-btn" onclick="setAudioMode('upload')">
+                <span>📁</span> Upload Audio File
+              </button>
+            </div>
+
+            <!-- Panel A: Live In-Browser Recorder -->
+            <div id="recorder-panel" class="recorder-box">
+              <div class="visualizer-wrapper">
+                <canvas id="waveform-canvas" width="400" height="90"></canvas>
+                <div id="record-timer" class="record-timer">00:00</div>
+              </div>
+
+              <div class="recorder-controls">
+                <button type="button" id="btn-start-record" class="btn btn-record" onclick="startRecording()">
+                  <span class="btn-dot"></span> Start Recording
+                </button>
+                <button type="button" id="btn-stop-record" class="btn btn-stop" onclick="stopRecording()" disabled>
+                  ⏹️ Stop Recording
+                </button>
+                <button type="button" id="btn-reset-record" class="btn btn-secondary" onclick="resetRecording()" disabled>
+                  🔄 Reset
+                </button>
+              </div>
+
+              <!-- Audio Preview Player -->
+              <div id="preview-container" class="preview-container" style="display: none;">
+                <p class="preview-title">Recorded Audio Preview:</p>
+                <audio id="audio-preview" controls class="custom-audio-player"></audio>
+              </div>
+            </div>
+
+            <!-- Panel B: File Upload -->
+            <div id="upload-panel" class="upload-box" style="display: none;">
+              <div class="drop-zone" onclick="document.getElementById('file-input').click()">
+                <div class="drop-icon">📤</div>
+                <p class="drop-text"><strong>Click to browse</strong> or drag & drop audio</p>
+                <p class="drop-subtext">WAV, MP3, OGG, WEBM, M4A (Max 25MB)</p>
+                <input type="file" id="file-input" name="file" accept="audio/*" style="display: none;" onchange="handleFileSelected(event)">
+              </div>
+              <div id="selected-file-badge" class="selected-file-badge" style="display: none;">
+                <span id="selected-filename">sample.wav</span>
+                <button type="button" class="btn-remove" onclick="removeSelectedFile()">✕</button>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="btn-submit" class="btn btn-primary btn-block">
+              🚀 Submit Recording & Extract Metrics
+            </button>
+          </form>
+        </div>
+
+        <!-- Right Column: Live Feature Extraction & Results Inspector -->
+        <div class="glass-card result-card">
+          <div class="card-header">
+            <h2 class="card-title">Real-Time Extraction Engine</h2>
+            <p class="card-desc">Signal processing analysis calculated instantly upon submission.</p>
+          </div>
+
+          <div id="empty-state" class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <h3>Awaiting Audio Submission</h3>
+            <p>Record or upload an audio file and hit submit to view duration, sample rate (kHz), bitrate, loudness (dB), and noise estimation.</p>
+          </div>
+
+          <div id="metrics-result" class="metrics-result" style="display: none;">
+            <div class="success-banner">
+              <span class="banner-icon">✅</span>
+              <div>
+                <h4>Submission Processed & Stored</h4>
+                <p id="result-candidate-info">Candidate: Tanvi Gupta (9000000254)</p>
+              </div>
+            </div>
+
+            <!-- Extracted Property Tiles -->
+            <div class="metrics-grid">
+              <div class="metric-tile">
+                <span class="metric-label">Duration</span>
+                <span class="metric-val" id="metric-duration">0.0 s</span>
+                <span class="metric-sub">Length of recording</span>
+              </div>
+
+              <div class="metric-tile">
+                <span class="metric-label">Sample Rate</span>
+                <span class="metric-val highlight-cyan" id="metric-samplerate">44.1 kHz</span>
+                <span class="metric-sub">Sampling frequency</span>
+              </div>
+
+              <div class="metric-tile">
+                <span class="metric-label">Bitrate</span>
+                <span class="metric-val highlight-purple" id="metric-bitrate">128 kbps</span>
+                <span class="metric-sub">Audio stream density</span>
+              </div>
+
+              <div class="metric-tile">
+                <span class="metric-label">Loudness (dBFS)</span>
+                <span class="metric-val highlight-amber" id="metric-loudness">-18.2 dB</span>
+                <span class="metric-sub">Root Mean Square energy</span>
+              </div>
+            </div>
+
+            <!-- Quality & SNR Bonus Tile -->
+            <div class="quality-banner">
+              <div class="quality-header">
+                <span class="quality-badge-label">Audio Quality & SNR Estimate:</span>
+                <span class="quality-score-badge" id="metric-quality">Studio Quality (SNR: 24.5 dB)</span>
+              </div>
+              <p class="quality-expl">Dynamic range signal-to-noise ratio calculated from energy distribution across frames.</p>
+            </div>
+
+            <!-- Playback in result -->
+            <div class="result-player-box">
+              <label class="form-label">Stored Audio Playback:</label>
+              <audio id="result-audio-player" controls class="custom-audio-player"></audio>
+            </div>
+
+            <button type="button" class="btn btn-secondary btn-block" onclick="switchTab('submissions')">
+              👉 View in All Submissions Table
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: SUBMISSIONS & AUDIO PLAYBACK LIST (TASK 3 SECOND VIEW) -->
+    <section id="view-submissions" class="view-panel">
+      <div class="glass-card">
+        <div class="card-header flex-between">
+          <div>
+            <h2 class="card-title">All Audio Submissions</h2>
+            <p class="card-desc">Recorded gig worker audio files with in-browser playback and extracted signal properties.</p>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="loadSubmissions()">
+            🔄 Refresh List
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="submissions-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Candidate</th>
+                <th>Phone</th>
+                <th>Audio Player</th>
+                <th>Duration</th>
+                <th>Sample Rate</th>
+                <th>Bitrate</th>
+                <th>Loudness</th>
+                <th>Quality / SNR</th>
+                <th>Submitted At</th>
+              </tr>
+            </thead>
+            <tbody id="submissions-table-body">
+              <tr>
+                <td colspan="10" class="text-center">Loading submissions...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: MASTER DATABASE DIRECTORY (TASK 1) -->
+    <section id="view-database" class="view-panel">
+      <div class="glass-card">
+        <div class="card-header flex-between">
+          <div>
+            <h2 class="card-title">Unified Candidates Master Table (Task 1 SQLite Database)</h2>
+            <p class="card-desc">Merged view of applicants, gig workers, and rates datasets with entity resolution.</p>
+          </div>
+          <input type="text" id="search-candidate" class="search-input" placeholder="🔍 Search candidate name, city, skill..." oninput="filterCandidates()">
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="candidates-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>City</th>
+                <th>Exp</th>
+                <th>Current CTC</th>
+                <th>Verified</th>
+                <th>Projects</th>
+                <th>Rate</th>
+                <th>Skills</th>
+                <th>Sources</th>
+              </tr>
+            </thead>
+            <tbody id="candidates-table-body">
+              <tr>
+                <td colspan="12" class="text-center">Loading master database...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <p>ConsultBae AI Automation Platform • Built for Take-Home Assessment • Powered by FastAPI & SQLite</p>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
