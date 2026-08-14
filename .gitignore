@@ -10,3 +10,8 @@ env/
 htmlcov/
 .DS_Store
 Thumbs.db
+
+# Personal study & video prep files (local only)
+ConsultBae_AI_Automation_Solution_Guide.pdf
+docs/VIDEO_DEMO_GUIDE.md
+docs/generate_pdf_guide.py
