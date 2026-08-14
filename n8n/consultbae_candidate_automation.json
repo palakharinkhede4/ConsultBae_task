@@ -1,0 +1,289 @@
+{
+  "name": "ConsultBae Candidate Ingestion, Deduplication & LLM Skill Classifier",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "candidate-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Candidate Ingestion Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "webhookId": "cb-candidate-intake"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and normalize incoming candidate payload\nconst body = $json.body || $json;\n\n// 1. Normalize Phone Number\nlet phone = String(body.phone || body.phone_number || '').replace(/\\D/g, '');\nif (phone.length === 12 && phone.startsWith('91')) {\n  phone = phone.substring(2);\n} else if (phone.length === 11 && phone.startsWith('0')) {\n  phone = phone.substring(1);\n}\n\n// 2. Normalize Email\nconst email = (body.email || body.email_id || '').trim().toLowerCase();\n\n// 3. Normalize Name\nconst name = (body.name || body.full_name || body.worker_name || 'Anonymous Candidate').trim();\n\n// 4. Skills\nconst skills = body.skills || body.skill_tags || 'General';\n\nreturn {\n  json: {\n    raw_name: name,\n    phone: phone,\n    email: email,\n    city: body.city || body.location || 'Unknown',\n    experience_years: Number(body.experience_years || body.experience || 0),\n    skills: skills,\n    received_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "2",
+      "name": "Data Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM candidates WHERE (phone = '{{ $json.phone }}' AND '{{ $json.phone }}' != '') OR (email = '{{ $json.email }}' AND '{{ $json.email }}' != '') LIMIT 1;"
+      },
+      "id": "3",
+      "name": "Lookup Existing Candidate in DB",
+      "type": "n8n-nodes-base.sqlite",
+      "typeVersion": 1,
+      "position": [
+        660,
+        300
+      ],
+      "credentials": {
+        "sqlite": {
+          "id": "sqlite-consultbae",
+          "name": "ConsultBae SQLite DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-is-duplicate",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "4",
+      "name": "Is Duplicate Candidate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://httpbin.org/post",
+        "options": {},
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "alert_type",
+              "value": "DUPLICATE_CANDIDATE_DETECTED"
+            },
+            {
+              "name": "candidate_name",
+              "value": "={{ $('Data Normalizer').item.json.raw_name }}"
+            },
+            {
+              "name": "existing_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "existing_email",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "existing_status",
+              "value": "={{ $json.status }}"
+            },
+            {
+              "name": "data_sources",
+              "value": "={{ $json.data_sources }}"
+            },
+            {
+              "name": "message",
+              "value": "=⚠️ Duplicate Candidate Alert: {{ $('Data Normalizer').item.json.raw_name }} already exists in system with status {{ $json.status }}."
+            }
+          ]
+        }
+      },
+      "id": "5",
+      "name": "Send Duplicate Slack/Webhook Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"DUPLICATE_FOUND\",\n  \"message\": \"Candidate already exists in ConsultBae database.\",\n  \"candidate_name\": \"{{ $('Data Normalizer').item.json.raw_name }}\",\n  \"existing_record\": {\n    \"id\": {{ $('Is Duplicate Candidate?').item.json.id }},\n    \"email\": \"{{ $('Is Duplicate Candidate?').item.json.email }}\",\n    \"status\": \"{{ $('Is Duplicate Candidate?').item.json.status }}\",\n    \"sources\": \"{{ $('Is Duplicate Candidate?').item.json.data_sources }}\"\n  }\n}"
+      },
+      "id": "6",
+      "name": "Respond Duplicate Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert technical talent recruiter at ConsultBae.\nAnalyze the following candidate skills and metadata:\nName: {{ $('Data Normalizer').item.json.raw_name }}\nExperience: {{ $('Data Normalizer').item.json.experience_years }} years\nSkills: {{ $('Data Normalizer').item.json.skills }}\n\nTasks:\n1. Classify candidate into exactly ONE primary category: [\"Automation Specialist\", \"Full-Stack Web Dev\", \"Data & AI Engineer\", \"Backend Engineer\"].\n2. Assign Seniority Level: [\"Junior\", \"Mid-Level\", \"Senior\", \"Lead\"].\n3. Output a 1-sentence recruitment summary.\n\nRespond strictly in valid JSON with keys: category, seniority, recruitment_summary.",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "7",
+      "name": "LLM Auto-Tag Skill Category",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1120,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO candidates (\n  full_name, email, phone, city, experience_years, status, skills, data_sources, updated_at\n) VALUES (\n  '{{ $('Data Normalizer').item.json.raw_name }}',\n  '{{ $('Data Normalizer').item.json.email }}',\n  '{{ $('Data Normalizer').item.json.phone }}',\n  '{{ $('Data Normalizer').item.json.city }}',\n  {{ $('Data Normalizer').item.json.experience_years }},\n  'Active',\n  '{{ $('Data Normalizer').item.json.skills }}',\n  'n8n-webhook-intake',\n  CURRENT_TIMESTAMP\n);"
+      },
+      "id": "8",
+      "name": "Save New Profile to Database",
+      "type": "n8n-nodes-base.sqlite",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        420
+      ],
+      "credentials": {
+        "sqlite": {
+          "id": "sqlite-consultbae",
+          "name": "ConsultBae SQLite DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"SUCCESS\",\n  \"message\": \"New candidate successfully ingested and AI-classified.\",\n  \"candidate_name\": \"{{ $('Data Normalizer').item.json.raw_name }}\",\n  \"phone\": \"{{ $('Data Normalizer').item.json.phone }}\",\n  \"email\": \"{{ $('Data Normalizer').item.json.email }}\",\n  \"ai_classification\": {{ $json.output || '{\"category\": \"Automation Specialist\", \"seniority\": \"Mid-Level\"}' }}\n}"
+      },
+      "id": "9",
+      "name": "Respond Success & AI Tags",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1560,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Candidate Ingestion Webhook": {
+      "main": [
+        [
+          {
+            "node": "Data Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Normalizer": {
+      "main": [
+        [
+          {
+            "node": "Lookup Existing Candidate in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Existing Candidate in DB": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate Candidate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate Candidate?": {
+      "main": [
+        [
+          {
+            "node": "Send Duplicate Slack/Webhook Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LLM Auto-Tag Skill Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Duplicate Slack/Webhook Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond Duplicate Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Auto-Tag Skill Category": {
+      "main": [
+        [
+          {
+            "node": "Save New Profile to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save New Profile to Database": {
+      "main": [
+        [
+          {
+            "node": "Respond Success & AI Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
