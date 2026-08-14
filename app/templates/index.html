@@ -3,25 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ConsultBae — AI Automation & Audio Gig Platform</title>
+  <title>ConsultBae - Audio Ingestion & Candidate Management Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <!-- Background Glow Elements -->
-  <div class="bg-gradient-orb orb-1"></div>
-  <div class="bg-gradient-orb orb-2"></div>
-
   <!-- Header Navigation -->
   <header class="app-header">
     <div class="header-container">
-      <div class="brand-badge">
-        <div class="brand-icon">🎙️</div>
+      <div class="brand-section">
+        <div class="brand-badge-icon">CB</div>
         <div>
-          <h1 class="brand-title">ConsultBae <span class="badge-tag">AI Platform</span></h1>
-          <p class="brand-subtitle">Gig Worker Audio Ingestion & Database Intelligence</p>
+          <h1 class="brand-title">ConsultBae <span class="badge-tag">Platform</span></h1>
+          <p class="brand-subtitle">Gig Worker Audio Ingestion & Candidate Management</p>
         </div>
       </div>
 
@@ -32,8 +28,8 @@
           <span class="stat-value" id="stat-candidates">54</span>
         </div>
         <div class="stat-chip">
-          <span class="stat-label">Verified Gig Workers</span>
-          <span class="stat-value" id="stat-verified">16</span>
+          <span class="stat-label">Verified Workers</span>
+          <span class="stat-value" id="stat-verified">14</span>
         </div>
         <div class="stat-chip">
           <span class="stat-label">Audio Submissions</span>
@@ -45,13 +41,13 @@
     <!-- Navigation Tabs -->
     <nav class="tab-navigation">
       <button class="nav-tab active" id="tab-btn-record" onclick="switchTab('record')">
-        <span class="tab-icon">🎙️</span> 1. Audio Collection Studio
+        1. Audio Collection
       </button>
       <button class="nav-tab" id="tab-btn-submissions" onclick="switchTab('submissions')">
-        <span class="tab-icon">📊</span> 2. Submissions & Audio Player
+        2. Submissions & Signal Analysis
       </button>
       <button class="nav-tab" id="tab-btn-database" onclick="switchTab('database')">
-        <span class="tab-icon">🗄️</span> 3. Master Database (Task 1)
+        3. Master Database
       </button>
     </nav>
   </header>
@@ -59,15 +55,15 @@
   <!-- Main Container -->
   <main class="main-container">
 
-    <!-- VIEW 1: AUDIO COLLECTION STUDIO (TASK 3 CORE) -->
+    <!-- VIEW 1: AUDIO COLLECTION -->
     <section id="view-record" class="view-panel active">
       <div class="grid-layout-2col">
         
         <!-- Left Column: Input Form & Audio Recorder -->
-        <div class="glass-card">
+        <div class="surface-card">
           <div class="card-header">
-            <h2 class="card-title">Submit Gig Audio Recording</h2>
-            <p class="card-desc">Enter your candidate details and record directly or upload an audio file.</p>
+            <h2 class="card-title">Audio Submission Form</h2>
+            <p class="card-desc">Enter candidate details and submit via browser recording or file upload.</p>
           </div>
 
           <form id="audio-form" onsubmit="handleAudioSubmit(event)">
@@ -79,13 +75,13 @@
 
             <div class="form-group">
               <label for="candidate-phone" class="form-label">Phone Number <span class="required">*</span></label>
-              <input type="tel" id="candidate-phone" name="phone" class="form-input" placeholder="e.g. 9000000254 or +91 9000000254" required>
-              <span class="form-hint">Accepts 10-digit mobile number with or without +91 prefix.</span>
+              <input type="tel" id="candidate-phone" name="phone" class="form-input" placeholder="e.g. 9000000254" required>
+              <span class="form-hint">Accepts standard 10-digit mobile number with or without country code prefix.</span>
             </div>
 
             <!-- Quick Auto-Fill helper for testing -->
             <div class="autofill-chips">
-              <span class="chip-label">Quick Fill:</span>
+              <span class="chip-label">Quick Select:</span>
               <button type="button" class="chip-btn" onclick="quickFill('Tanvi Gupta', '9000000254')">Tanvi Gupta</button>
               <button type="button" class="chip-btn" onclick="quickFill('Rohit Nair', '9000000268')">Rohit Nair</button>
               <button type="button" class="chip-btn" onclick="quickFill('Isha Chopra', '9000000138')">Isha Chopra</button>
@@ -94,14 +90,14 @@
             <!-- Recording & Upload Selector -->
             <div class="input-method-selector">
               <button type="button" id="btn-mode-record" class="mode-btn active" onclick="setAudioMode('record')">
-                <span>🔴</span> Record via Mic
+                Microphone Recording
               </button>
               <button type="button" id="btn-mode-upload" class="mode-btn" onclick="setAudioMode('upload')">
-                <span>📁</span> Upload Audio File
+                File Upload
               </button>
             </div>
 
-            <!-- Panel A: Live In-Browser Recorder -->
+            <!-- Panel A: In-Browser Recorder -->
             <div id="recorder-panel" class="recorder-box">
               <div class="visualizer-wrapper">
                 <canvas id="waveform-canvas" width="400" height="90"></canvas>
@@ -110,19 +106,19 @@
 
               <div class="recorder-controls">
                 <button type="button" id="btn-start-record" class="btn btn-record" onclick="startRecording()">
-                  <span class="btn-dot"></span> Start Recording
+                  <span class="record-indicator"></span> Record Audio
                 </button>
-                <button type="button" id="btn-stop-record" class="btn btn-stop" onclick="stopRecording()" disabled>
-                  ⏹️ Stop Recording
+                <button type="button" id="btn-stop-record" class="btn btn-secondary" onclick="stopRecording()" disabled>
+                  Stop Recording
                 </button>
                 <button type="button" id="btn-reset-record" class="btn btn-secondary" onclick="resetRecording()" disabled>
-                  🔄 Reset
+                  Reset
                 </button>
               </div>
 
               <!-- Audio Preview Player -->
               <div id="preview-container" class="preview-container" style="display: none;">
-                <p class="preview-title">Recorded Audio Preview:</p>
+                <p class="preview-title">Recorded Audio Preview</p>
                 <audio id="audio-preview" controls class="custom-audio-player"></audio>
               </div>
             </div>
@@ -130,42 +126,39 @@
             <!-- Panel B: File Upload -->
             <div id="upload-panel" class="upload-box" style="display: none;">
               <div class="drop-zone" onclick="document.getElementById('file-input').click()">
-                <div class="drop-icon">📤</div>
-                <p class="drop-text"><strong>Click to browse</strong> or drag & drop audio</p>
-                <p class="drop-subtext">WAV, MP3, OGG, WEBM, M4A (Max 25MB)</p>
+                <p class="drop-text"><strong>Choose an audio file</strong> or drag and drop here</p>
+                <p class="drop-subtext">Supported formats: WAV, MP3, OGG, WebM, M4A (Max 25MB)</p>
                 <input type="file" id="file-input" name="file" accept="audio/*" style="display: none;" onchange="handleFileSelected(event)">
               </div>
               <div id="selected-file-badge" class="selected-file-badge" style="display: none;">
                 <span id="selected-filename">sample.wav</span>
-                <button type="button" class="btn-remove" onclick="removeSelectedFile()">✕</button>
+                <button type="button" class="btn-remove" onclick="removeSelectedFile()">Remove</button>
               </div>
             </div>
 
             <!-- Submit Button -->
             <button type="submit" id="btn-submit" class="btn btn-primary btn-block">
-              🚀 Submit Recording & Extract Metrics
+              Submit Recording & Extract Signal Properties
             </button>
           </form>
         </div>
 
-        <!-- Right Column: Live Feature Extraction & Results Inspector -->
-        <div class="glass-card result-card">
+        <!-- Right Column: Signal Extraction Results -->
+        <div class="surface-card result-card">
           <div class="card-header">
-            <h2 class="card-title">Real-Time Extraction Engine</h2>
-            <p class="card-desc">Signal processing analysis calculated instantly upon submission.</p>
+            <h2 class="card-title">Signal Analysis Engine</h2>
+            <p class="card-desc">Real-time acoustic and signal properties extracted on submission.</p>
           </div>
 
           <div id="empty-state" class="empty-state">
-            <div class="empty-icon">⚡</div>
-            <h3>Awaiting Audio Submission</h3>
-            <p>Record or upload an audio file and hit submit to view duration, sample rate (kHz), bitrate, loudness (dB), and noise estimation.</p>
+            <h3>Awaiting Audio Input</h3>
+            <p>Record or upload an audio file and submit to compute duration, sample rate (kHz), bitrate, loudness (dBFS), and noise quality estimation.</p>
           </div>
 
           <div id="metrics-result" class="metrics-result" style="display: none;">
             <div class="success-banner">
-              <span class="banner-icon">✅</span>
               <div>
-                <h4>Submission Processed & Stored</h4>
+                <h4 id="result-status-title">Submission Processed & Stored</h4>
                 <p id="result-candidate-info">Candidate: Tanvi Gupta (9000000254)</p>
               </div>
             </div>
@@ -175,45 +168,45 @@
               <div class="metric-tile">
                 <span class="metric-label">Duration</span>
                 <span class="metric-val" id="metric-duration">0.0 s</span>
-                <span class="metric-sub">Length of recording</span>
+                <span class="metric-sub">Total playback duration</span>
               </div>
 
               <div class="metric-tile">
                 <span class="metric-label">Sample Rate</span>
-                <span class="metric-val highlight-cyan" id="metric-samplerate">44.1 kHz</span>
+                <span class="metric-val highlight-blue" id="metric-samplerate">44.1 kHz</span>
                 <span class="metric-sub">Sampling frequency</span>
               </div>
 
               <div class="metric-tile">
                 <span class="metric-label">Bitrate</span>
                 <span class="metric-val highlight-purple" id="metric-bitrate">128 kbps</span>
-                <span class="metric-sub">Audio stream density</span>
+                <span class="metric-sub">Bitstream rate</span>
               </div>
 
               <div class="metric-tile">
-                <span class="metric-label">Loudness (dBFS)</span>
+                <span class="metric-label">Loudness</span>
                 <span class="metric-val highlight-amber" id="metric-loudness">-18.2 dB</span>
-                <span class="metric-sub">Root Mean Square energy</span>
+                <span class="metric-sub">RMS relative to full scale</span>
               </div>
             </div>
 
-            <!-- Quality & SNR Bonus Tile -->
+            <!-- Quality & SNR Tile -->
             <div class="quality-banner">
               <div class="quality-header">
-                <span class="quality-badge-label">Audio Quality & SNR Estimate:</span>
+                <span class="quality-badge-label">Quality & Signal-to-Noise Ratio:</span>
                 <span class="quality-score-badge" id="metric-quality">Studio Quality (SNR: 24.5 dB)</span>
               </div>
-              <p class="quality-expl">Dynamic range signal-to-noise ratio calculated from energy distribution across frames.</p>
+              <p class="quality-expl">Calculated from dynamic range energy separation across 50ms frames.</p>
             </div>
 
             <!-- Playback in result -->
             <div class="result-player-box">
-              <label class="form-label">Stored Audio Playback:</label>
+              <label class="form-label">Stored File Playback:</label>
               <audio id="result-audio-player" controls class="custom-audio-player"></audio>
             </div>
 
             <button type="button" class="btn btn-secondary btn-block" onclick="switchTab('submissions')">
-              👉 View in All Submissions Table
+              View All Submissions
             </button>
           </div>
         </div>
@@ -221,16 +214,16 @@
       </div>
     </section>
 
-    <!-- VIEW 2: SUBMISSIONS & AUDIO PLAYBACK LIST (TASK 3 SECOND VIEW) -->
+    <!-- VIEW 2: SUBMISSIONS & PLAYBACK LIST -->
     <section id="view-submissions" class="view-panel">
-      <div class="glass-card">
+      <div class="surface-card">
         <div class="card-header flex-between">
           <div>
-            <h2 class="card-title">All Audio Submissions</h2>
+            <h2 class="card-title">Audio Submissions Directory</h2>
             <p class="card-desc">Recorded gig worker audio files with in-browser playback and extracted signal properties.</p>
           </div>
           <button class="btn btn-sm btn-secondary" onclick="loadSubmissions()">
-            🔄 Refresh List
+            Refresh Directory
           </button>
         </div>
 
@@ -241,7 +234,7 @@
                 <th>ID</th>
                 <th>Candidate</th>
                 <th>Phone</th>
-                <th>Audio Player</th>
+                <th>Playback</th>
                 <th>Duration</th>
                 <th>Sample Rate</th>
                 <th>Bitrate</th>
@@ -260,15 +253,15 @@
       </div>
     </section>
 
-    <!-- VIEW 3: MASTER DATABASE DIRECTORY (TASK 1) -->
+    <!-- VIEW 3: MASTER DATABASE DIRECTORY -->
     <section id="view-database" class="view-panel">
-      <div class="glass-card">
+      <div class="surface-card">
         <div class="card-header flex-between">
           <div>
-            <h2 class="card-title">Unified Candidates Master Table (Task 1 SQLite Database)</h2>
-            <p class="card-desc">Merged view of applicants, gig workers, and rates datasets with entity resolution.</p>
+            <h2 class="card-title">Unified Candidates Master Table</h2>
+            <p class="card-desc">Resolved candidate entities ingested from applicants, workers, and rates datasets.</p>
           </div>
-          <input type="text" id="search-candidate" class="search-input" placeholder="🔍 Search candidate name, city, skill..." oninput="filterCandidates()">
+          <input type="text" id="search-candidate" class="search-input" placeholder="Search by name, city, skill, phone..." oninput="filterCandidates()">
         </div>
 
         <div class="table-responsive">
@@ -280,7 +273,7 @@
                 <th>Phone</th>
                 <th>Email</th>
                 <th>City</th>
-                <th>Exp</th>
+                <th>Experience</th>
                 <th>Current CTC</th>
                 <th>Verified</th>
                 <th>Projects</th>
@@ -302,7 +295,7 @@
   </main>
 
   <footer class="app-footer">
-    <p>ConsultBae AI Automation Platform • Built for Take-Home Assessment • Powered by FastAPI & SQLite</p>
+    <p>ConsultBae Candidate & Audio Platform | Built with FastAPI & SQLite</p>
   </footer>
 
   <script src="/static/js/app.js"></script>

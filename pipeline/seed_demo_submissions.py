@@ -1,5 +1,5 @@
 """
-Seeds sample audio submissions into the SQLite database for immediate visual demonstration.
+Seeds sample audio submissions into the SQLite database for initial demonstration.
 """
 
 import os
@@ -54,7 +54,7 @@ def seed_submissions():
 
     conn.commit()
     conn.close()
-    print("Seeded demo audio submissions into database successfully.")
+    print("[INFO] Seeded demo audio submissions successfully.")
 
 
 if __name__ == "__main__":

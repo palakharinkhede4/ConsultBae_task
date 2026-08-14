@@ -56,7 +56,6 @@ class CandidateProfile:
 
     def merge_with(self, other: "CandidateProfile"):
         """Merges another candidate profile into this profile."""
-        # Merge names (prefer non-abbreviated full names)
         if len(other.full_name) > len(self.full_name) and not self.full_name.endswith("."):
             self.full_name = other.full_name
         elif self.full_name.endswith(".") and not other.full_name.endswith("."):
@@ -137,7 +136,7 @@ class EntityResolver:
     def _get_or_create(self, name: str, phone: Optional[str] = None, email: Optional[str] = None, city: Optional[str] = None) -> CandidateProfile:
         matched_profile: Optional[CandidateProfile] = None
 
-        # Priority 1: Match by Phone Number (Strongest Personal Identifier)
+        # Priority 1: Match by Phone Number
         if phone and phone in self.phone_index:
             matched_profile = self.phone_index[phone]
 
@@ -151,9 +150,8 @@ class EntityResolver:
             if name_key in self.name_city_index:
                 matched_profile = self.name_city_index[name_key]
 
-        # Priority 4: Match by Abbreviated Name + Email match or Name only if strong
+        # Priority 4: Match by Abbreviated Name + Email match
         if not matched_profile and email:
-            # Check if username part of email matches person's name
             email_user = email.split("@")[0].lower()
             name_parts = name.lower().split()
             if len(name_parts) >= 2 and all(part in email_user for part in name_parts):
@@ -181,7 +179,7 @@ class EntityResolver:
     def ingest_applicants(self, file_path: str):
         """Ingests File 1: applicants.csv"""
         if not os.path.exists(file_path):
-            print(f"Warning: {file_path} not found.")
+            print(f"[WARN] File not found: {file_path}")
             return
 
         with open(file_path, "r", encoding="utf-8-sig") as f:
@@ -221,9 +219,9 @@ class EntityResolver:
                 profile.data_sources.add("applicants.csv")
 
     def ingest_workers(self, file_path: str):
-        """Ingests File 2: workers.csv (handling duplicate header rows)"""
+        """Ingests File 2: workers.csv"""
         if not os.path.exists(file_path):
-            print(f"Warning: {file_path} not found.")
+            print(f"[WARN] File not found: {file_path}")
             return
 
         with open(file_path, "r", encoding="utf-8-sig") as f:
@@ -232,7 +230,6 @@ class EntityResolver:
             for row_idx, row in enumerate(reader):
                 if not row or not any(cell.strip() for cell in row):
                     continue
-                # Handle header detection or duplicate header
                 if "Name" in row and "Phone Number" in row:
                     header = [c.strip() for c in row]
                     continue
@@ -267,9 +264,9 @@ class EntityResolver:
                 profile.data_sources.add("workers.csv")
 
     def ingest_rates(self, file_path: str):
-        """Ingests File 3: rates.csv (handling shifted columns and empty rows)"""
+        """Ingests File 3: rates.csv"""
         if not os.path.exists(file_path):
-            print(f"Warning: {file_path} not found.")
+            print(f"[WARN] File not found: {file_path}")
             return
 
         with open(file_path, "r", encoding="utf-8-sig") as f:
@@ -278,10 +275,8 @@ class EntityResolver:
             
             for row in reader:
                 if not row or not any(cell.strip() for cell in row):
-                    continue  # Skip empty rows like ,,,,,
+                    continue
                 
-                # Check for shifted column anomaly:
-                # e.g., ["react, javascript, mysql", "ISHA.CHOPRA95@MAILTEST.EXAMPLE.ORG", "Isha Chopra", "1406/hr", "Pune", "active"]
                 if len(row) >= 2 and "@" in row[1] and "@" not in row[0]:
                     skills_raw = row[0]
                     email_raw = row[1]
@@ -332,7 +327,6 @@ def setup_database(db_path: str):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Create unified candidates table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS candidates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -358,7 +352,6 @@ def setup_database(db_path: str):
     );
     """)
 
-    # Create audio submissions table for Task 3
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS audio_submissions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -375,7 +368,6 @@ def setup_database(db_path: str):
     );
     """)
 
-    # Create indexes for fast lookup and deduplication
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_candidates_phone ON candidates(phone);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_candidates_email ON candidates(email);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_candidates_name ON candidates(full_name);")
@@ -389,36 +381,28 @@ def run_merge_pipeline(db_path: str = DB_PATH, processed_csv_path: str = PROCESS
     """
     Main orchestration routine for data ingestion, resolution, SQLite persistence, and CSV export.
     """
-    print("=" * 60)
-    print("ConsultBae AI Automation - Unified Data Pipeline")
-    print("=" * 60)
+    print("[INFO] Starting ConsultBae Data Pipeline...")
 
-    # 1. Initialize SQLite Database Schema
     setup_database(db_path)
-    print(f"[1/4] SQLite Database schema initialized at: {db_path}")
+    print(f"[INFO] SQLite schema initialized at: {db_path}")
 
-    # 2. Run Entity Resolution Ingestion
     resolver = EntityResolver()
     
     app_file = os.path.join(RAW_DIR, "applicants.csv")
     worker_file = os.path.join(RAW_DIR, "workers.csv")
     rate_file = os.path.join(RAW_DIR, "rates.csv")
 
-    print(f"[2/4] Ingesting & normalizing raw files...")
     resolver.ingest_applicants(app_file)
-    print(f"      - Ingested applicants.csv -> {len(resolver.candidates)} unified entities tracked.")
+    print(f"[INFO] Ingested applicants.csv -> {len(resolver.candidates)} unified entities tracked.")
     
     resolver.ingest_workers(worker_file)
-    print(f"      - Ingested workers.csv    -> {len(resolver.candidates)} unified entities tracked.")
+    print(f"[INFO] Ingested workers.csv    -> {len(resolver.candidates)} unified entities tracked.")
     
     resolver.ingest_rates(rate_file)
-    print(f"      - Ingested rates.csv      -> {len(resolver.candidates)} unified entities tracked.")
+    print(f"[INFO] Ingested rates.csv      -> {len(resolver.candidates)} unified entities tracked.")
 
-    # 3. Save to SQLite Database
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
-    # Clear existing candidates table before reload
     cursor.execute("DELETE FROM candidates;")
     
     records = []
@@ -443,9 +427,8 @@ def run_merge_pipeline(db_path: str = DB_PATH, processed_csv_path: str = PROCESS
 
     conn.commit()
     conn.close()
-    print(f"[3/4] Persisted {len(records)} clean unified records to SQLite `candidates` table.")
+    print(f"[INFO] Persisted {len(records)} records to candidates table.")
 
-    # 4. Export Clean Master CSV
     os.makedirs(os.path.dirname(processed_csv_path), exist_ok=True)
     if records:
         fieldnames = list(records[0].keys())
@@ -453,11 +436,9 @@ def run_merge_pipeline(db_path: str = DB_PATH, processed_csv_path: str = PROCESS
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(records)
-        print(f"[4/4] Exported master dataset to: {processed_csv_path}")
+        print(f"[INFO] Master dataset written to: {processed_csv_path}")
 
-    print("=" * 60)
-    print("Pipeline Execution Completed Successfully!")
-    print("=" * 60)
+    print("[INFO] Pipeline execution finished.")
     return records
 
 

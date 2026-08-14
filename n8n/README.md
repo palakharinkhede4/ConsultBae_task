@@ -1,6 +1,6 @@
 # ConsultBae n8n Workflow Automation (Task 2)
 
-This directory contains the complete, exportable **n8n automation workflow** for candidate deduplication, database synchronization, and LLM skill auto-tagging.
+This directory contains the exportable **n8n automation workflow** for candidate deduplication, database synchronization, and LLM skill auto-tagging.
 
 ---
 
@@ -8,28 +8,28 @@ This directory contains the complete, exportable **n8n automation workflow** for
 
 ```
 [ Webhook Trigger (Incoming Profile / CSV Row) ]
-                       │
-                       ▼
+                       |
+                       v
             [ Data Normalizer Code Node ]
     (Standardizes Phone: 10-digits, Lowercases Email)
-                       │
-                       ▼
+                       |
+                       v
         [ SQLite Database Lookup Node ]
        (SELECT * FROM candidates WHERE phone/email)
-                       │
-                       ▼
+                       |
+                       v
           [ IF Node: Is Duplicate? ]
               /                  \
       (YES: Duplicate)     (NO: New Candidate)
-            │                      │
-            ▼                      ▼
+            |                      |
+            v                      v
   [ Slack/Webhook Alert ]   [ LLM Auto-Tag Skill Category ]
-  "Duplicate Detected!"     (Classifies: Automation/Web/Data)
-            │                      │
-            ▼                      ▼
+  "Duplicate Detected"      (Classifies: Automation/Web/Data)
+            |                      |
+            v                      v
   [ Respond HTTP 200 ]     [ Save Profile to SQLite DB ]
-  (Status: DUPLICATE)              │
-                                   ▼
+  (Status: DUPLICATE)              |
+                                   v
                            [ Respond HTTP 200 ]
                            (Status: SUCCESS + AI Tags)
 ```
@@ -42,11 +42,11 @@ This directory contains the complete, exportable **n8n automation workflow** for
 2. **Deterministic Data Normalization**: Cleans phone numbers (handles `+91`, `0`, spaces) and lowercases emails.
 3. **Database Deduplication**: Looks up the candidate in the SQLite database created in Task 1.
 4. **Duplicate Alerting Branch**: If the person already exists, dispatches an immediate alert payload (Slack/Webhook/Email) with their existing status and data sources.
-5. **AI Skill Categorization Branch**: If new, prompts an LLM agent to classify their skill set into `Automation Specialist`, `Full-Stack Web Dev`, `Data & AI Engineer`, or `Backend Engineer`, then writes back the enriched profile to the database.
+5. **Skill Categorization Branch**: If new, prompts an LLM agent to classify their skill set into `Automation Specialist`, `Full-Stack Web Dev`, `Data & AI Engineer`, or `Backend Engineer`, then writes back the enriched profile to the database.
 
 ---
 
-## How to Import & Run in n8n (Step-by-Step Guide)
+## How to Import & Run in n8n
 
 ### Option A: Using Free n8n Cloud Trial (Fastest, No Install)
 1. Sign up for a free trial at [n8n.io](https://n8n.io).
@@ -55,7 +55,7 @@ This directory contains the complete, exportable **n8n automation workflow** for
 4. Click **Save** and **Activate / Test step**.
 
 ### Option B: Running Locally via n8n Desktop or Docker
-Run this single command in terminal:
+Run this command in terminal:
 ```bash
 npx n8n
 ```
@@ -67,7 +67,7 @@ Open `http://localhost:5678` in your browser, import the `consultbae_candidate_a
 
 ---
 
-## Test Payloads for Video Demo
+## Test Payloads
 
 ### Test 1: Testing Duplicate Detection
 Send a candidate that already exists in Task 1 DB (e.g. Tanvi Gupta):

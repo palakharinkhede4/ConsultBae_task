@@ -1,7 +1,7 @@
 /**
- * ConsultBae Audio Collection App - Frontend Logic
+ * ConsultBae Audio Collection Platform - Frontend Application
  * Implements Web Audio API recording, real-time waveform visualization,
- * metadata extraction rendering, and candidate database views.
+ * metadata extraction rendering, and master database directory.
  */
 
 let audioMode = 'record'; // 'record' or 'upload'
@@ -63,10 +63,10 @@ function setupCanvas() {
 function drawEmptyWaveform() {
   const canvas = document.getElementById('waveform-canvas');
   if (!canvas || !canvasCtx) return;
-  canvasCtx.fillStyle = '#080c16';
+  canvasCtx.fillStyle = '#090d16';
   canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-  canvasCtx.strokeStyle = 'rgba(99, 102, 241, 0.3)';
-  canvasCtx.lineWidth = 2;
+  canvasCtx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+  canvasCtx.lineWidth = 1.5;
   canvasCtx.beginPath();
   canvasCtx.moveTo(0, canvas.height / 2);
   canvasCtx.lineTo(canvas.width, canvas.height / 2);
@@ -123,8 +123,8 @@ async function startRecording() {
     document.getElementById('btn-reset-record').disabled = true;
 
   } catch (err) {
-    console.error('Microphone access denied or error:', err);
-    alert('Microphone access error. You can also use "Upload Audio File" mode directly.');
+    console.error('Microphone access error:', err);
+    alert('Microphone access not available. Please switch to "File Upload" mode to submit an audio file.');
   }
 }
 
@@ -170,11 +170,11 @@ function visualizeWaveform() {
     animationFrameId = requestAnimationFrame(draw);
     analyserNode.getByteTimeDomainData(dataArray);
 
-    canvasCtx.fillStyle = '#080c16';
+    canvasCtx.fillStyle = '#090d16';
     canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-    canvasCtx.lineWidth = 2.5;
-    canvasCtx.strokeStyle = '#06b6d4';
+    canvasCtx.lineWidth = 2;
+    canvasCtx.strokeStyle = '#38bdf8';
     canvasCtx.beginPath();
 
     const sliceWidth = (canvas.width * 1.0) / bufferLength;
@@ -227,7 +227,7 @@ async function handleAudioSubmit(event) {
 
   if (audioMode === 'record') {
     if (!recordedBlob) {
-      alert('Please record an audio snippet first or switch to "Upload Audio File".');
+      alert('Please record an audio snippet first or switch to "File Upload".');
       return;
     }
     formData.append('audio_file', recordedBlob, 'recording.webm');
@@ -241,7 +241,7 @@ async function handleAudioSubmit(event) {
   }
 
   submitBtn.disabled = true;
-  submitBtn.innerText = '⏳ Processing & Extracting Metrics...';
+  submitBtn.innerText = 'Processing audio and extracting signal metrics...';
 
   try {
     const res = await fetch('/api/submit-audio', {
@@ -255,7 +255,6 @@ async function handleAudioSubmit(event) {
       return;
     }
 
-    // Display Extracted Metrics
     displayResult(data);
     loadStats();
     loadSubmissions();
@@ -265,7 +264,7 @@ async function handleAudioSubmit(event) {
     alert('An error occurred during submission.');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.innerText = '🚀 Submit Recording & Extract Metrics';
+    submitBtn.innerText = 'Submit Recording & Extract Signal Properties';
   }
 }
 
@@ -275,7 +274,7 @@ function displayResult(data) {
   resultBox.style.display = 'block';
 
   document.getElementById('result-candidate-info').innerText = 
-    `Candidate: ${data.candidate.name} (${data.candidate.phone}) ${data.candidate.matched_existing_profile ? '• [Matched Profile in DB]' : '• [New Candidate]'}`;
+    `Candidate: ${data.candidate.name} (${data.candidate.phone}) ${data.candidate.matched_existing_profile ? '| Matched Profile in Database' : '| New Candidate Entity'}`;
 
   const metrics = data.audio_metrics;
   document.getElementById('metric-duration').innerText = `${metrics.duration_sec} s`;
@@ -308,7 +307,7 @@ async function loadSubmissions() {
     const data = await res.json();
     
     if (data.submissions.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding: 2rem; color: var(--text-muted);">No audio submissions yet. Submit a recording in View 1 to populate this table.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding: 2rem; color: var(--text-muted);">No audio submissions yet. Submit a recording in Tab 1 to populate this directory.</td></tr>';
       return;
     }
 
@@ -318,23 +317,23 @@ async function loadSubmissions() {
         <td><strong>${s.candidate_name}</strong></td>
         <td><code>${s.phone}</code></td>
         <td>
-          <audio controls style="height: 32px; width: 180px;">
+          <audio controls style="height: 30px; width: 170px;">
             <source src="${s.audio_url}" type="audio/wav">
             <source src="${s.audio_url}" type="audio/webm">
           </audio>
         </td>
-        <td><span class="badge" style="background: rgba(255,255,255,0.05);">${s.duration_sec}s</span></td>
-        <td><span class="badge" style="background: rgba(6, 182, 212, 0.15); color: #67e8f9;">${s.sample_rate_khz} kHz</span></td>
-        <td><span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #d8b4fe;">${s.bitrate_kbps} kbps</span></td>
-        <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fde68a;">${s.loudness_db} dB</span></td>
-        <td><span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7;">${s.quality_score}</span></td>
-        <td style="font-size: 0.75rem; color: var(--text-muted);">${s.submitted_at}</td>
+        <td><span class="badge">${s.duration_sec}s</span></td>
+        <td><span class="badge" style="background: #0f172a; color: #38bdf8;">${s.sample_rate_khz} kHz</span></td>
+        <td><span class="badge" style="background: #0f172a; color: #c084fc;">${s.bitrate_kbps} kbps</span></td>
+        <td><span class="badge" style="background: #0f172a; color: #fde68a;">${s.loudness_db} dB</span></td>
+        <td><span class="badge" style="background: #064e3b; color: #6ee7b7;">${s.quality_score}</span></td>
+        <td style="font-size: 0.72rem; color: var(--text-muted);">${s.submitted_at}</td>
       </tr>
     `).join('');
 
   } catch (err) {
     console.error('Error loading submissions:', err);
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="color: #f43f5e;">Failed to load submissions.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="color: #ef4444;">Failed to load submissions.</td></tr>';
   }
 }
 
@@ -347,7 +346,7 @@ async function loadCandidates() {
     renderCandidates(allCandidates);
   } catch (err) {
     console.error('Error loading candidates:', err);
-    tbody.innerHTML = '<tr><td colspan="12" class="text-center" style="color: #f43f5e;">Failed to load candidates.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center" style="color: #ef4444;">Failed to load candidates.</td></tr>';
   }
 }
 
@@ -362,15 +361,15 @@ function renderCandidates(candidates) {
     <tr>
       <td>${c.id}</td>
       <td><strong>${c.full_name}</strong></td>
-      <td><code>${c.phone || '—'}</code></td>
-      <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;">${c.email || '—'}</td>
-      <td>${c.city || '—'}</td>
-      <td>${c.experience_years !== null ? c.experience_years + 'y' : '—'}</td>
-      <td>${c.current_ctc_formatted || '—'}</td>
-      <td>${c.verified === 1 ? '<span class="badge badge-verified">✓ Yes</span>' : (c.verified === 0 ? '<span class="badge badge-unverified">No</span>' : '—')}</td>
-      <td>${c.projects_completed !== null ? c.projects_completed : '—'}</td>
-      <td>${c.rate_formatted || '—'}</td>
-      <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; font-size: 0.75rem;">${c.skills || '—'}</td>
+      <td><code>${c.phone || '-'}</code></td>
+      <td style="max-width: 170px; overflow: hidden; text-overflow: ellipsis;">${c.email || '-'}</td>
+      <td>${c.city || '-'}</td>
+      <td>${c.experience_years !== null ? c.experience_years + 'y' : '-'}</td>
+      <td>${c.current_ctc_formatted || '-'}</td>
+      <td>${c.verified === 1 ? '<span class="badge badge-verified">Yes</span>' : (c.verified === 0 ? '<span class="badge badge-unverified">No</span>' : '-')}</td>
+      <td>${c.projects_completed !== null ? c.projects_completed : '-'}</td>
+      <td>${c.rate_formatted || '-'}</td>
+      <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; font-size: 0.72rem;">${c.skills || '-'}</td>
       <td>${(c.data_sources || '').split(',').map(s => `<span class="badge badge-source">${s.trim()}</span>`).join(' ')}</td>
     </tr>
   `).join('');

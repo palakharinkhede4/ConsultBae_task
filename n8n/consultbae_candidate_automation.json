@@ -115,7 +115,7 @@
             },
             {
               "name": "message",
-              "value": "=⚠️ Duplicate Candidate Alert: {{ $('Data Normalizer').item.json.raw_name }} already exists in system with status {{ $json.status }}."
+              "value": "=Duplicate Candidate Alert: {{ $('Data Normalizer').item.json.raw_name }} already exists in system with status {{ $json.status }}."
             }
           ]
         }
